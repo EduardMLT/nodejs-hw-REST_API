@@ -4,12 +4,12 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
 async function registerAuthController(req, res, next) {
-  const { name, email, password } = req.body; 
+  const { name, email, password } = req.body;
 
   try {
     const user = await User.findOne({ email }).exec();
 
-    if (user !== null) {
+    if (!user) {
       return res.status(409).send({ message: "Email in use" });
     }
 
@@ -48,7 +48,7 @@ async function loginAuthController(req, res, next) {
     const token = jwt.sign(
       { id: user._id, name: user.name },
       process.env.JWT_SECRET,
-      { expiresIn: 60 * 60 } // token expires in one our
+      process.env.TOKEN_OUR
     );
 
     await User.findByIdAndUpdate(user._id, { token }).exec();
@@ -73,13 +73,12 @@ async function logoutAuthController(req, res, next) {
 }
 
 async function currentAuthController(req, res, next) {
-  try {    
-
+  try {
     const authHeader = req.headers["authorization"];
     const [bearer, token] = authHeader.split(" ", 2);
 
     console.log("currentAuthController", { bearer, token });
-        
+
     res.status(200).send({ message: "Token current" });
   } catch (error) {
     next(error);

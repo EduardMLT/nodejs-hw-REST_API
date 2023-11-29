@@ -11,8 +11,6 @@ const {
 
 const jsonParser = express.json();
 
-console.log("1 - routes api contacts");
-
 const router = express.Router();
 
 router.get("/", listContacts);
