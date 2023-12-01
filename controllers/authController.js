@@ -9,7 +9,7 @@ async function registerAuthController(req, res, next) {
   try {
     const user = await User.findOne({ email }).exec();
 
-    if (!user) {
+    if (user) {
       return res.status(409).send({ message: "Email in use" });
     }
 
@@ -48,7 +48,7 @@ async function loginAuthController(req, res, next) {
     const token = jwt.sign(
       { id: user._id, name: user.name },
       process.env.JWT_SECRET,
-      process.env.TOKEN_OUR
+      { expiresIn: 60 * 60 }
     );
 
     await User.findByIdAndUpdate(user._id, { token }).exec();
