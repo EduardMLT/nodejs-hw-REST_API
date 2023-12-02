@@ -3,8 +3,11 @@ const logger = require("morgan");
 const cors = require("cors");
 
 const auth = require("./middlewares/auth");
+
 const { authRouter } = require("./routes/api/auth");
 const { contactsRouter } = require("./routes/api/contacts");
+const { avatarRouter } = require("./routes/api/user");
+
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -16,6 +19,7 @@ app.use(cors());
 
 app.use("/user", authRouter);
 app.use("/api/contacts", auth, contactsRouter);
+app.use("/user", auth, avatarRouter);
 
 app.use(errorHandler);
 
