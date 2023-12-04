@@ -6,6 +6,7 @@ const {
   logoutAuthController,
   currentAuthController,
   verifyAuthController,
+  reVerifyAuthController,
 } = require("../../controllers/authController");
 
 const auth = require("../../middlewares/auth");
@@ -18,5 +19,6 @@ router.post("/login", jsonParser, loginAuthController);
 router.get("/logout", auth, logoutAuthController);
 router.get("/current", auth, currentAuthController);
 router.get("/verify/:token", verifyAuthController);
+router.post("/verify", jsonParser, reVerifyAuthController);
 
 module.exports = { authRouter: router };
