@@ -1,7 +1,11 @@
+const crypto = require("node:crypto");
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 const User = require("../models/user");
+
+const sendEmail = require("../utils/sendEmail");
 
 async function registerAuthController(req, res, next) {
   const { name, email, password } = req.body;
@@ -14,8 +18,18 @@ async function registerAuthController(req, res, next) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const verifyToken = crypto.randomUUID();
 
-    await User.create({ name, email, password: passwordHash });
+    const sendEmailMessage = {
+      to: email,
+      subject: "Welcome to The Book of Contacts",
+      html: `To confirm your registration please click on the <a href="http://localhost:8080/user/verify/${verifyToken}">link</a>`,
+      text: `To confirm your registration please open the link http://localhost:8080/user/verify/${verifyToken}`,
+    };
+
+    await sendEmail(sendEmailMessage);
+
+    await User.create({ name, email, verifyToken, password: passwordHash });
 
     res.status(201).send({ message: "Registration successfully" });
   } catch (error) {
@@ -43,6 +57,10 @@ async function loginAuthController(req, res, next) {
       return res
         .status(401)
         .send({ message: "Email or password is incorrect" });
+    }
+
+    if (user.verify !== true) {
+      return res.status(401).send({ message: "Your account is not verified" });
     }
 
     const token = jwt.sign(
@@ -85,9 +103,78 @@ async function currentAuthController(req, res, next) {
   }
 }
 
+async function verifyAuthController(req, res, next) {
+  const { token } = req.params;
+
+  try {
+    const user = await User.findOne({ verifyToken: token }).exec();
+
+    if (user === null) {
+      return res.status(404).send({ message: "Not found" });
+    }
+
+    await User.findByIdAndUpdate(user._id, { verify: true, verifyToken: null });
+
+    res.send({ message: "Email confirm successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function reVerifyAuthController(req, res, next) {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email }).exec();
+
+    let counter = user.confirmationOfVerification;
+
+    if (counter > 5) {
+      return res
+        .status(400)
+        .send({
+          message:
+            "You have been sent more than 5 messages to confirm. Access is limited",
+        });
+    }
+
+    counter = counter + 1;
+
+    if (!user) {
+      return res.status(400).send({ message: "missing required field email" });
+    }
+
+    if (user.verify) {
+      return res
+        .status(400)
+        .send({ message: "Verification has already been passed" });
+    }
+
+    const sendEmailMessage = {
+      to: email,
+      subject: "Welcome to The Book of Contacts",
+      html: `To confirm your registration please click on the <a href="http://localhost:8080/user/verify/${user.verifyToken}">link</a>`,
+      text: `To confirm your registration please open the link http://localhost:8080/user/verify/${user.verifyToken}`,
+    };
+
+    await sendEmail(sendEmailMessage);
+
+    await User.findByIdAndUpdate(user._id, {
+      confirmationOfVerification: counter  });
+
+    res.status(201).send({
+      message: `A confirmation letter for email sent to your email address repeatedly :  ${counter} time(s) . In case of more than 5 - access will be limited`,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   registerAuthController,
   loginAuthController,
   logoutAuthController,
   currentAuthController,
+  verifyAuthController,
+  reVerifyAuthController,
 };
