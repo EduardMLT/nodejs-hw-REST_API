@@ -5,11 +5,12 @@ const User = require("../models/user");
 function auth(req, res, next) {
   const authHeader = req.headers["authorization"];
 
+  const [bearer, token] = authHeader.split(" ", 2);
+
   if (typeof authHeader === "undefined") {
     return res.status(401).send({ message: "Invalid token" });
   }
-
-  const [bearer, token] = authHeader.split(" ", 2);
+ 
 
   if (bearer !== "Bearer") {
     return res.status(401).send({ message: "Invalid token" });

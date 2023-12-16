@@ -17,8 +17,8 @@ const userSchema = new mongoose.Schema(
     },
     subscription: {
       type: String,
-      enum: ["starter", "pro", "business"],
-      default: "starter",
+      enum: ["weight_loss", "muscle_gain", "weight_maintenance"],
+      default: "weight_loss",
     },
     token: {
       type: String,
